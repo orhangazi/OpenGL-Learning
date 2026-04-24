@@ -19,9 +19,16 @@ void processInput(GLFWwindow *window)
 
 // Üçgeni oluşturan köşe bilgileri (Vertex data)
 float vertices[] = {
-	-0.5f, -0.5f, 0.0f,
-	0.5f, -0.5f, 0.0f,
-	0.0f, 0.5f, 0.0f
+	// first triangle
+	0.5f, 0.5f, 0.0f, // top right
+	0.5f, -0.5f, 0.0f, // bottom right
+	-0.5f, -0.5f, 0.0f, // bottom left
+	-0.5f, 0.5f, 0.0f // top left
+};
+
+unsigned int indices[] = { // Note that we start from 0!
+	0, 1, 3, // First triangle
+	1, 2, 3, // Second triangle
 };
 
 const char *vertexShaderSource = "#version 330 core\n"
@@ -69,12 +76,12 @@ int main()
 
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
-	// Vertex Array Object oluşturuluyor
+	// 1. Vertex Array Object oluşturuluyor
 	unsigned int VAO;
 	glGenVertexArrays(1, &VAO);
 	glBindVertexArray(VAO);
 
-	// Vertex Buffer Object oluşturuluyor
+	// 2. Vertex Buffer Object oluşturuluyor
 	unsigned int VBO;
 	glGenBuffers(1, &VBO);
 
@@ -86,6 +93,14 @@ int main()
 	// vertex data'yı buffer hafızasına kopyalıyoruz.
 	// GPU vertex data'ya anında erişebilir olacak ve performans çok artmış olacak.
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+	// 3. Element Buffer Object oluşturuluyor.
+	unsigned int EBO;
+	glGenBuffers(1, &EBO);
+
+	// Element buffer bağlanır ve bu buffer'a indices (indexler) kopyalanır.
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
 	// Vertex shader yükleniyor
 	unsigned int vertexShader;
@@ -119,8 +134,7 @@ int main()
 	if (!successFragment)
 	{
 		glGetShaderInfoLog(fragmentShader, 512, NULL, infoLogFragment);
-		std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n"
-				  << infoLogFragment << std::endl;
+		std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLogFragment << std::endl;
 	}
 
 	// Shader Program oluşturuluyor ve yukarıdaki derlenmiş vertex ve fragment shaderlar birbiriyle bağlanacak.
@@ -171,8 +185,8 @@ int main()
 		// fonksiyonundan sonra bind ediliyor. Sebebini şimdilik anlamadım.
 		glBindVertexArray(VAO);
 
-		// Array Çizdiren fonksiyon
-		glDrawArrays(GL_TRIANGLES, 0, 3);
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		glBindVertexArray(0);
 
 		// Check and call events and swap the buffers
 		glfwSwapBuffers(window);
