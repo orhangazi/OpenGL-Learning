@@ -74,6 +74,7 @@ int main()
 
 	glViewport(0, 0, 800, 600);
 
+	// krandaki görüntünün çizim modunu değiştirebilen fonksiyon ekledim. Sadece çizgi şeklinde ve normal şekilde 2 ayurı mod seçilebiliyor. GL_LINE, GL_FILL
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
