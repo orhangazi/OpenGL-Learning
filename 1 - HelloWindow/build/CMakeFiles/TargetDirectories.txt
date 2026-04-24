@@ -1,4 +1,0 @@
-C:/Users/orhangazi/OpenGL Learning/1 - HelloWindow/build/CMakeFiles/HelloWindow.dir
-C:/Users/orhangazi/OpenGL Learning/1 - HelloWindow/build/CMakeFiles/INSTALL.dir
-C:/Users/orhangazi/OpenGL Learning/1 - HelloWindow/build/CMakeFiles/ALL_BUILD.dir
-C:/Users/orhangazi/OpenGL Learning/1 - HelloWindow/build/CMakeFiles/ZERO_CHECK.dir
