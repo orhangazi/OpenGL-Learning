@@ -74,6 +74,8 @@ int main()
 
 	glViewport(0, 0, 800, 600);
 
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
 	// 1. Vertex Array Object oluşturuluyor
