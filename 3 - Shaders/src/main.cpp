@@ -20,12 +20,19 @@ void processInput(GLFWwindow *window)
 }
 
 // Üçgeni oluşturan köşe bilgileri (Vertex data)
-float vertices[] = {
-	// first triangle
-	0.5f, 0.5f, 0.0f, // top right
-	0.5f, -0.5f, 0.0f, // bottom right
-	-0.5f, -0.5f, 0.0f, // bottom left
+/* float vertices[] = {
+	// first triangle // color
+	0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 0.0f, // top right
+	0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, // bottom right
+	-0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, // bottom left
 	-0.5f, 0.5f, 0.0f // top left
+}; */
+
+float vertices[] = {
+	// first triangle // color
+	0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f,	  // bottom right
+	-0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f,  // bottom left
+	0.0f, 0.5f, 0.0f, 0.0f, 0.0f, 1.0f, // top
 };
 
 unsigned int indices[] = { // Note that we start from 0!
@@ -80,14 +87,17 @@ int main()
 	const char *vertexShaderSource = vertexShaderStr.c_str();
 
 	std::ifstream fFile("shaders/fragmentshader.glsl");
+	
 	if (!fFile.is_open())
 	{
 		std::cout << "ERROR: fragmentshader.glsl acilamadi" << std::endl;
 		return -1;
 	}
+	
 	std::stringstream fss;
 	fss << fFile.rdbuf();
 	fFile.close();
+
 	std::string fragmentShaderStr = fss.str();
 	const char *fragmentShaderSource = fragmentShaderStr.c_str();
 
@@ -110,12 +120,12 @@ int main()
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
 	// 3. Element Buffer Object oluşturuluyor.
-	unsigned int EBO;
-	glGenBuffers(1, &EBO);
+	//unsigned int EBO;
+	//glGenBuffers(1, &EBO);
 
 	// Element buffer bağlanır ve bu buffer'a indices (indexler) kopyalanır.
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
 	// Vertex shader yükleniyor
 	unsigned int vertexShader;
@@ -131,8 +141,7 @@ int main()
 	if (!successVertex)
 	{
 		glGetShaderInfoLog(vertexShader, 512, NULL, infoLogVertex);
-		std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n"
-				  << infoLogVertex << std::endl;
+		std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLogVertex << std::endl;
 	}
 
 	// Fragment shader yükleniyor
@@ -177,8 +186,13 @@ int main()
 
 	// 1. then set the vertex attributes pointers
 	// Vertex Attributes bağlanıyor ve etkinleştiriliyor.
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *)0);
 	glEnableVertexAttribArray(0);
+	
+	// 1. then set the vertex attributes pointers
+	// Vertex Attributes bağlanıyor ve etkinleştiriliyor.
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *)(3* sizeof(float)));
+	glEnableVertexAttribArray(1);
 
 	while (!glfwWindowShouldClose(window))
 	{
@@ -191,16 +205,27 @@ int main()
 
 		// Drawing code in render loop
 
+		// Uniform ourColor'ı güncelleyerek fragment shader'ı güncelliyoruz.
+		// Yeşilin tonlarını her frame yeniden hesaplayıp geçişli renk ayarlıyoruz.
+		float timeValue = glfwGetTime();
+		float greenValue = (sin(timeValue) / 2.0f) + 0.5f;
+		int vertexColorLocation = glGetUniformLocation(shaderProgram, "ourColor");
+
 		// Draw the object:
 		// Bir objeyi render ederken (ekranda işlerken) shaderProgram kullanılır (use).
 		// 2. use our shader program when we want to render an object
 		glUseProgram(shaderProgram);
 
+		// Uniform ile shaderProgram sürecinde rengi değiştirilebiliyor. Veriler güncellenebiliyor yani.
+		glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 1.0f);
+
 		// Bir yukarıda VAO tanımlandığında, bir de şimdi burda render döngüsü içinde glUseProgram
 		// fonksiyonundan sonra bind ediliyor. Sebebini şimdilik anlamadım.
 		glBindVertexArray(VAO);
 
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		// Üçgen çizdirildiği için 3 tane vertex çizileceğini söylüyoruz. 2 tane üçgen çizilseydi
+		// 2. parametre olarak 6 tane vertex çizilmesini belirtirdik:
+		glDrawArrays(GL_TRIANGLES, 0, 3);
 		glBindVertexArray(0);
 
 		// Check and call events and swap the buffers
