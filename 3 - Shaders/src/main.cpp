@@ -3,6 +3,7 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include "shader.chh"
 
 // çerçeve boyutu değiştirildiğinde viewport dimensionlarını ayarlar
 void framebuffer_size_callback(GLFWwindow *window, int width, int height)
@@ -127,62 +128,7 @@ int main()
 	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-	// Vertex shader yükleniyor
-	unsigned int vertexShader;
-	vertexShader = glCreateShader(GL_VERTEX_SHADER);
-
-	glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-	glCompileShader(vertexShader);
-
-	int successVertex;
-	char infoLogVertex[512];
-	glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &successVertex);
-
-	if (!successVertex)
-	{
-		glGetShaderInfoLog(vertexShader, 512, NULL, infoLogVertex);
-		std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLogVertex << std::endl;
-	}
-
-	// Fragment shader yükleniyor
-	unsigned int fragmentShader;
-	fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-
-	glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
-	glCompileShader(fragmentShader);
-
-	int successFragment;
-	char infoLogFragment[512];
-	glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &successFragment);
-
-	if (!successFragment)
-	{
-		glGetShaderInfoLog(fragmentShader, 512, NULL, infoLogFragment);
-		std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLogFragment << std::endl;
-	}
-
-	// Shader Program oluşturuluyor ve yukarıdaki derlenmiş vertex ve fragment shaderlar birbiriyle bağlanacak.
-	unsigned int shaderProgram;
-	shaderProgram = glCreateProgram();
-
-	glAttachShader(shaderProgram, vertexShader);
-	glAttachShader(shaderProgram, fragmentShader);
-	glLinkProgram(shaderProgram);
-
-	int successShaderProgram;
-	char infoLogShaderProgram[512];
-
-	glGetProgramiv(shaderProgram, GL_LINK_STATUS, &successShaderProgram);
-
-	if (!successShaderProgram)
-	{
-		glGetProgramInfoLog(shaderProgram, 512, NULL, infoLogShaderProgram);
-		std::cout << "ERROR::SHADER::PROGRAM::LINK_FAILED\n" << infoLogShaderProgram << std::endl;
-	}
-
-	// Performans için shaderlar linklendikten sonra onları siliyoruz:
-	glDeleteShader(vertexShader);
-	glDeleteShader(fragmentShader);
+	Shader ourShader("shaders/vertexshader.glsl", "shaders/fragmentshader.glsl");
 
 	// 1. then set the vertex attributes pointers
 	// Vertex Attributes bağlanıyor ve etkinleştiriliyor.
@@ -209,15 +155,14 @@ int main()
 		// Yeşilin tonlarını her frame yeniden hesaplayıp geçişli renk ayarlıyoruz.
 		float timeValue = glfwGetTime();
 		float greenValue = (sin(timeValue) / 2.0f) + 0.5f;
-		int vertexColorLocation = glGetUniformLocation(shaderProgram, "ourColor");
+		//int vertexColorLocation = glGetUniformLocation(shaderProgram, "ourColor");
 
 		// Draw the object:
-		// Bir objeyi render ederken (ekranda işlerken) shaderProgram kullanılır (use).
-		// 2. use our shader program when we want to render an object
-		glUseProgram(shaderProgram);
+		ourShader.use();
+		ourShader.setFloat("someUniform", 1.0f);
 
 		// Uniform ile shaderProgram sürecinde rengi değiştirilebiliyor. Veriler güncellenebiliyor yani.
-		glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 1.0f);
+		//glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 1.0f);
 
 		// Bir yukarıda VAO tanımlandığında, bir de şimdi burda render döngüsü içinde glUseProgram
 		// fonksiyonundan sonra bind ediliyor. Sebebini şimdilik anlamadım.
