@@ -5,10 +5,11 @@ layout (location = 2) in vec2 aTexCoord; //texture coordinats from vertex attrib
 
 out vec3 ourColor; // Specify a color output to the fragment shader
 out vec2 TexCoord;
+uniform mat4 transform;
 
 void main()
 {
-	gl_Position = vec4(aPos, 1.0); // see how we directly give a vec3 to vec4's constructor
+	gl_Position = transform * vec4(aPos, 1.0); // see how we directly give a vec3 to vec4's constructor
 	ourColor = aColor; //set the output variable to a dark-red color
-	TexCoord = aTexCoord;
+	TexCoord = vec2(aTexCoord.x, aTexCoord.y);
 }

@@ -11,7 +11,7 @@ set(GLFW3_PATH "C:/glfw-3.4")
 #set(SDL2_MIXER_PATH "C:/SDL2_mixer-2.8.1")
 #set(SDL2_TTF_PATH "C:/SDL2_ttf-2.24.0")
 #set(GLEW_PATH "C:/glew-2.3.1")
-#set(GLM_PATH "C:/glm-0.9.9.8")
+set(GLM_PATH "C:/glm-0.9.9.8")
 
 find_package(OpenGL REQUIRED)
 
@@ -39,7 +39,7 @@ target_include_directories(Transformations PRIVATE
     #${SDL2_MIXER_PATH}/include
     #${SDL2_TTF_PATH}/include
     #${GLEW_PATH}/include
-    #${GLM_PATH}
+    ${GLM_PATH}
     include
 )
 

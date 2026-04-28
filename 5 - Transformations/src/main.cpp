@@ -5,6 +5,9 @@
 #include <sstream>
 #include "shader.chh"
 #include "stbiImageLoader.chh"
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 // çerçeve boyutu değiştirildiğinde viewport dimensionlarını ayarlar
 void framebuffer_size_callback(GLFWwindow *window, int width, int height)
@@ -22,14 +25,6 @@ void processInput(GLFWwindow *window)
 }
 
 // Üçgeni oluşturan köşe bilgileri (Vertex data)
-/* float vertices[] = {
-	// first triangle // color
-	0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 0.0f, // top right
-	0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, // bottom right
-	-0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, // bottom left
-	-0.5f, 0.5f, 0.0f // top left
-}; */
-
 float vertices[] = {
 	// positions          // colors           // texture coords
 	0.5f, 0.5f, 0.0f,     1.0f, 0.0f, 0.0f,   1.0f, 1.0f, // top right
@@ -38,15 +33,10 @@ float vertices[] = {
 	-0.5f, 0.5f, 0.0f,    1.0f, 1.0f, 0.0f,   0.0f, 1.0f  // top left
 };
 
+// indexler
 unsigned int indices[] = { // Note that we start from 0!
 	0, 1, 3, // First triangle
 	1, 2, 3 // Second triangle
-};
-
-float texCoords[] = {
-	0.0f, 0.0f, // lower-left corner
-	1.0f, 0.0f, // lower-right corner
-	0.5f, 0.0f // top-center corner
 };
 
 int main()
@@ -219,6 +209,25 @@ int main()
 	glUniform1i(glGetUniformLocation(ourShader.ID, "texture1"), 0); //set it manually
 	ourShader.setInt("texture2", 1); //or with shader class
 
+	// Transformations: 1 birim hareket ettirmek için trans = glm::mat4(1.0f) 
+	glm::vec4 vec(1.0f, 0.0f, 0.0f, 1.0f);
+	glm::mat4 trans = glm::mat4(1.0f);
+	trans = glm::translate(trans, glm::vec3(1.0f, 1.0f, 0.0f));
+	vec = trans * vec;
+
+	// çıktı ilk oluşturulan vektöre kaydırmak istediğimiz 1 birimlik vektörü çarpar ve çıktısını yine ilk oluşturduğumuz
+	// vec vektörüne atar. Sonuçta (1+1, 0+1, 0+0) 210 yazmalıdır:
+	std::cout << vec.x << vec.y << vec.z << std::endl;
+
+	// Başka tranformation işlemleri:
+	glm::mat4 trans2 = glm::mat4(1.0f);
+	trans2 = glm::rotate(trans2, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	trans2 = glm::scale(trans2, glm::vec3(0.5f, 0.5f, 0.5f));
+	
+	// elde ettiğimiz yeni pozisyon verileri vertex shader'a gönderiliyor.
+	unsigned int transformLoc = glGetUniformLocation(ourShader.ID, "transform");
+	glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans2));
+
 	while (!glfwWindowShouldClose(window))
 	{
 		// Input
@@ -238,6 +247,16 @@ int main()
 
 		// Uniform ile shaderProgram sürecinde rengi değiştirilebiliyor. Veriler güncellenebiliyor yani.
 		//glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 1.0f);
+
+		// Başka başka tranformation işlemleri:
+		glm::mat4 trans3 = glm::mat4(1.0f);
+		//trans3 = glm::scale(trans3, glm::vec3(0.5f, 0.5f, 0.5f));
+		trans3 = glm::translate(trans3, glm::vec3(0.5f, -0.5f, 0.0f));
+		trans3 = glm::rotate(trans3, (float)glfwGetTime(), glm::vec3(0.0f, 0.0f, 1.0f));
+
+		// elde ettiğimiz yeni pozisyon verileri vertex shader'a gönderiliyor.
+		unsigned int transformLoc = glGetUniformLocation(ourShader.ID, "transform");
+		glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans3));
 
 		// Texture ayarlanıyor:
 		glActiveTexture(GL_TEXTURE0);
