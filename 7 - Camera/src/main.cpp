@@ -20,10 +20,13 @@ glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
 glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
 glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 
+float deltaTime = 0.0f; // Time between current frame and last frame
+float lastFrame = 0.0f; // Tiime of last freame
+
 // Kullanıcı tarafından yapılan inputları işler
 void processInput(GLFWwindow *window)
 {
-	const float cameraSpeed = 0.05f;// Uygun şekilde ayarlayın
+	const float cameraSpeed = 2.5f * deltaTime;// Uygun şekilde ayarlayın
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 	{
 		glfwSetWindowShouldClose(window, true);
@@ -31,7 +34,6 @@ void processInput(GLFWwindow *window)
 
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
 	{
-		std::cout << "W'ye basıldı\n";
 		cameraPos += cameraSpeed * cameraFront;
 	}
 
@@ -50,7 +52,7 @@ void processInput(GLFWwindow *window)
 		cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
 	}
 
-	std::cout << "Kamera pos x: " << cameraPos.x << " y: " << cameraPos.y << std::endl;
+	//std::cout << "Kamera pos x: " << cameraPos.x << " y: " << cameraPos.y << std::endl;
 }
 
 // Üçgeni oluşturan köşe bilgileri (Vertex data)
@@ -350,6 +352,10 @@ int main()
 		//view = glm::lookAt(cameraPos, cameraTarget, up);
 		//view = glm::lookAt(glm::vec3(camX, 0.0, camZ), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
 		view = glm::lookAt(cameraPos, cameraPos + cameraFront, up);
+
+		float currentFrame = glfwGetTime();
+		deltaTime  = currentFrame - lastFrame;
+		lastFrame = currentFrame;
 
 		// Uniform ourColor'ı güncelleyerek fragment shader'ı güncelliyoruz.
 		// Yeşilin tonlarını her frame yeniden hesaplayıp geçişli renk ayarlıyoruz.
