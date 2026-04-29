@@ -2,12 +2,12 @@
 #include <GLFW/glfw3.h>
 #include <iostream>
 #include <fstream>
-#include <sstream>
-#include "shader.chh"
-#include "stbiImageLoader.chh"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <sstream>
+#include "shader.hpp"
+#include "stbiImageLoader.cpp"
 
 // çerçeve boyutu değiştirildiğinde viewport dimensionlarını ayarlar
 void framebuffer_size_callback(GLFWwindow *window, int width, int height)
@@ -285,6 +285,46 @@ int main()
 
 		// Drawing code in render loop
 
+		// Kamera oluşturuluyor ve ayarlanıyor.
+		// Kamera pozisyonu ayarlanıyor (x, y, z):
+		glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
+
+		// Kamera yönünü ayarlanıyor (x, y, z):
+		// The name direction vector is not the best chosen name, 
+		// since it is actually pointing in the reverse direction of what it is targeting.
+		glm::vec3 cameraTarget = glm::vec3(0.0f, 0.0f, 0.0f);
+		glm::vec3 cameraDirection = glm::normalize(cameraPos - cameraTarget);
+
+		// Sağ yönün ayarlanması:
+		// Right axis
+		// The next vector that we need is a right vector that represents 
+		// the positive x-axis of the camera space. To get the right vector
+		// we use a little trick by first specifying an up vector that points 
+		// upwards (in world space). Then we do a cross product on the up vector 
+		// and the direction vector from step 2. Since the result of a cross product 
+		// is a vector perpendicular to both vectors, we will get a vector that points 
+		// in the positive x-axis's direction (if we would switch the cross product 
+		// order we'd get a vector that points in the negative x-axis):
+		glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
+		glm::vec3 cameraRight = glm::normalize(glm::cross(up, cameraDirection));
+		glm::vec3 cameraLeft = glm::normalize(glm::cross(cameraDirection, up));
+
+		// Yukarı yönün ayarlanması:
+		// Up axis:
+		glm::vec3 cameraUp = glm::cross(cameraDirection, cameraRight);
+		
+		//tahmini cameraDown hesaplamam:
+		glm::vec3 cameraDown = glm::cross(cameraRight, cameraDirection);
+
+		// GLM'in LookAt matrisini kullanıyoruz. Her şeyi bizim için çok daha kolaylaştırıy.
+		// Sadece camera pozisyonu, kamera hedefi ve yukarı matris (up):
+		const float radius = 10.0f;
+		float camX = sin(glfwGetTime()) * radius;
+		float camZ = cos(glfwGetTime()) * radius;
+		glm::mat4 view;
+		//view = glm::lookAt(cameraPos, cameraTarget, up);
+		view = glm::lookAt(glm::vec3(camX, 0.0, camZ), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
+
 		// Uniform ourColor'ı güncelleyerek fragment shader'ı güncelliyoruz.
 		// Yeşilin tonlarını her frame yeniden hesaplayıp geçişli renk ayarlıyoruz.
 		float timeValue = glfwGetTime();
@@ -292,16 +332,15 @@ int main()
 		//int vertexColorLocation = glGetUniformLocation(shaderProgram, "ourColor");
 
 		// Uniform ile shaderProgram sürecinde rengi değiştirilebiliyor. Veriler güncellenebiliyor yani.
-
 		// 3D'de ilk model matrisimizin oluşturulması: model yere değecekmiş gibi aşağı indiriliyor.
 		// glm::mat4 model = glm::mat4(1.0f);
 		// model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 
 		// Sahne içinde nasıl hareket edildiğini sonra göstereceğiz daha ayrıntılı olarak.
 		// Şimdilik view matrix şöyle görünüyor:
-		glm::mat4 view = glm::mat4(1.0f);
+		//glm::mat4 view = glm::mat4(1.0f);
 		// note that we're translating the scene in the reverse direction of where we want to move
-		view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
+		//view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
 
 		// sol olarak perpective projection ayarlıyoruz. En gerçekçi görünüm için 45.0f:
 		glm::mat4 projection;
