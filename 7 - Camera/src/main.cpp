@@ -15,13 +15,42 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height)
 	glViewport(0, 0, width, height);
 }
 
+// Başlangıç kamera ayarları yapılıyor.
+glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
+glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
+glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
+
 // Kullanıcı tarafından yapılan inputları işler
 void processInput(GLFWwindow *window)
 {
+	const float cameraSpeed = 0.05f;// Uygun şekilde ayarlayın
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 	{
 		glfwSetWindowShouldClose(window, true);
 	}
+
+	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+	{
+		std::cout << "W'ye basıldı\n";
+		cameraPos += cameraSpeed * cameraFront;
+	}
+
+	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+	{
+		cameraPos -= cameraSpeed * cameraFront;
+	}
+
+	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+	{
+		cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+	}
+
+	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+	{
+		cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+	}
+
+	std::cout << "Kamera pos x: " << cameraPos.x << " y: " << cameraPos.y << std::endl;
 }
 
 // Üçgeni oluşturan köşe bilgileri (Vertex data)
@@ -285,10 +314,6 @@ int main()
 
 		// Drawing code in render loop
 
-		// Kamera oluşturuluyor ve ayarlanıyor.
-		// Kamera pozisyonu ayarlanıyor (x, y, z):
-		glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
-
 		// Kamera yönünü ayarlanıyor (x, y, z):
 		// The name direction vector is not the best chosen name, 
 		// since it is actually pointing in the reverse direction of what it is targeting.
@@ -323,7 +348,8 @@ int main()
 		float camZ = cos(glfwGetTime()) * radius;
 		glm::mat4 view;
 		//view = glm::lookAt(cameraPos, cameraTarget, up);
-		view = glm::lookAt(glm::vec3(camX, 0.0, camZ), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
+		//view = glm::lookAt(glm::vec3(camX, 0.0, camZ), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
+		view = glm::lookAt(cameraPos, cameraPos + cameraFront, up);
 
 		// Uniform ourColor'ı güncelleyerek fragment shader'ı güncelliyoruz.
 		// Yeşilin tonlarını her frame yeniden hesaplayıp geçişli renk ayarlıyoruz.
