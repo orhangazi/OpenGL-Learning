@@ -278,6 +278,19 @@ int main()
 	// GPU vertex data'ya anında erişebilir olacak ve performans çok artmış olacak.
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
+	// Işık VAO
+	unsigned int lightVAO;
+	glGenVertexArrays(1, &lightVAO);
+	glBindVertexArray(lightVAO);
+	// we only need to bind to the vbo, to the container's vbo's data already contains the data.
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	// set vertex attribute
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+
+	// todo: yarın yeni vertex shader oluşturarak buradan devam
+	// edeceğim: https://learnopengl.com/Lighting/Colors
+
 	// 3. Element Buffer Object oluşturuluyor.
 	// unsigned int EBO;
 	// glGenBuffers(1, &EBO);
@@ -287,6 +300,7 @@ int main()
 	// glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
 	Shader ourShader("shaders/vertexshader.glsl", "shaders/fragmentshader.glsl");
+	Shader lightingShader("shaders/lightingVertexShader.glsl", "shaders/lightingFragmentShader.glsl");
 
 	// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
 	// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
@@ -362,6 +376,13 @@ int main()
 	ourShader.use();												// don't forget to activate the shader the shader before settings uniforms!
 	glUniform1i(glGetUniformLocation(ourShader.ID, "texture1"), 0); // set it manually
 	ourShader.setInt("texture2", 1);								// or with shader class
+
+	// lightingShader'larının uniform nesneleri ayarlanıyor:
+	lightingShader.use();
+	lightingShader.setVec3("objectColor", glm::vec3(1.0f, 0.5f, 0.31f));
+	lightingShader.setVec3("lightColor", glm::vec3(1.0f, 1.0f, 1.0f));
+
+	glm::vec3 lightPos(1.2f, 1.0, 2.0f);
 
 	// Transformations: 1 birim hareket ettirmek için trans = glm::mat4(1.0f)
 	glm::vec4 vec(1.0f, 0.0f, 0.0f, 1.0f);
@@ -490,8 +511,25 @@ int main()
 		int modelLoc = glGetUniformLocation(ourShader.ID, "model");
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 
+		// ışık küpü oluşturuluyor
+		glm::mat4 modelLightCube = glm::mat4(1.0f);
+		modelLightCube = glm::translate(modelLightCube, lightPos);
+		modelLightCube = glm::scale(modelLightCube, glm::vec3(0.2f));
+
+		// ışık location belirleniyor:
+		int modelLightCubeLocation = glGetUniformLocation(lightingShader.ID, "model");
+		glUniformMatrix4fv(modelLightCubeLocation, 1, GL_FALSE, glm::value_ptr(modelLightCube));
+
 		// view matrisleri vertex shadera gönderiliyor:
-		int viewLoc = glGetUniformLocation(ourShader.ID, "view");
+		int viewLightCubeLocation = glGetUniformLocation(lightingShader.ID, "view");
+		glUniformMatrix4fv(viewLightCubeLocation, 1, GL_FALSE, glm::value_ptr(view));
+
+		// Projection matrisleri vertex shadera gönderiliyor:
+		int projectionLightCubeLocation = glGetUniformLocation(lightingShader.ID, "projection");
+		glUniformMatrix4fv(projectionLightCubeLocation, 1, GL_FALSE, glm::value_ptr(projection));
+
+		// view matrisleri vertex shadera gönderiliyor:
+		/* int viewLoc = glGetUniformLocation(ourShader.ID, "view");
 		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 
 		// Projection matrisleri vertex shadera gönderiliyor:
@@ -506,7 +544,7 @@ int main()
 
 		// elde ettiğimiz yeni pozisyon verileri vertex shader'a gönderiliyor.
 		unsigned int transformLoc = glGetUniformLocation(ourShader.ID, "transform");
-		glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans3));
+		glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans3)); */
 
 		// Texture ayarlanıyor:
 		glActiveTexture(GL_TEXTURE0);
@@ -517,14 +555,18 @@ int main()
 		// Bir yukarıda VAO tanımlandığında, bir de şimdi burda render döngüsü içinde glUseProgram
 		// fonksiyonundan sonra bind ediliyor. Sebebini şimdilik anlamadım.
 		// glBindVertexArray(VAO);
-		glBindVertexArray(VAO);
+		//glBindVertexArray(VAO);
+
+		// Işık VAO küpü çizdiriliyor
+		glBindVertexArray(lightVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
 
 		// Üçgen çizdirildiği için 3 tane vertex çizileceğini söylüyoruz. 2 tane üçgen çizilseydi
 		// 2. parametre olarak 6 tane vertex çizilmesini belirtirdik:
 		// glDrawArrays(GL_TRIANGLES, 0, 36);
 		// glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
-		for (unsigned int i = 0; i < 10; i++)
+		/* for (unsigned int i = 0; i < 10; i++)
 		{
 			glm::mat4 model = glm::mat4(1.0f);
 			model = glm::translate(model, cubePositions[i]);
@@ -533,7 +575,7 @@ int main()
 			ourShader.setMat4("model", model);
 
 			glDrawArrays(GL_TRIANGLES, 0, 36);
-		}
+		} */
 
 		glBindVertexArray(0);
 
