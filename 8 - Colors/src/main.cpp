@@ -1,589 +1,346 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-#include <iostream>
-#include <fstream>
+
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include <sstream>
-#include "shader.hpp"
-#include "stbiImageLoader.cpp"
 
-// çerçeve boyutu değiştirildiğinde viewport dimensionlarını ayarlar
-void framebuffer_size_callback(GLFWwindow *window, int width, int height)
-{
-	glViewport(0, 0, width, height);
-}
+#include <shader_m.h>
+#include <camera.h>
 
-// Başlangıç kamera ayarları yapılıyor.
-glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
-glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
-glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
+#include <iostream>
 
-float deltaTime = 0.0f; // Time between current frame and last frame
-float lastFrame = 0.0f; // Tiime of last freame
+void framebuffer_size_callback(GLFWwindow *window, int width, int height);
+void mouse_callback(GLFWwindow *window, double xpos, double ypos);
+void scroll_callback(GLFWwindow *window, double xoffset, double yoffset);
+void processInput(GLFWwindow *window);
 
-float firstMouse = true;
-float lastX = 400;
-float lastY = 300;
-float yaw = -90.0f;
-float pitch = 0.0f;
-// Fare hareketlerini alabilmek için:
-void mouse_callback(GLFWwindow *window, double xpos, double ypos)
-{
+// settings
+const unsigned int SCR_WIDTH = 800;
+const unsigned int SCR_HEIGHT = 600;
 
-	// Eğer ilk defa fare ekrana girdiğinde ekranın çok hızlı sıçramaması için bunu yapıyouruz. Çünkü fare ilk girdiğinde
-	//  ekranın kenarına algılanıyor ama ortasında (hesaplama farenin ortasında olduğu düşünülerek yapılıyor) çok uzakta olduğu
-	//  için fare çok fazla hareket ettirilmiş sanılıp kamera hareketi de çok hızlı oluyor. Onun önüne geçmek için bunu yapıyouruz.
-	if (firstMouse)
-	{
-		lastX = xpos;
-		lastY = ypos;
+// camera
+Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
+float lastX = SCR_WIDTH / 2.0f;
+float lastY = SCR_HEIGHT / 2.0f;
+bool firstMouse = true;
 
-		firstMouse = false;
-	}
+// timing
+float deltaTime = 0.0f;
+float lastFrame = 0.0f;
 
-	// farenineski konumunu ve yeni konumunu kamerayı fareye göre hareket ettirebilmek için alıyruz.
-	float xoffset = xpos - lastX;
-	float yoffset = lastY - ypos; // y koordinatları aşağıdan yukarıya doğru değiştiği için ters çevrilmiştir.
-	lastX = xpos;
-	lastY = ypos;
-
-	// farenin aşırı hızlı hareket etmemesi için hız ayarı yapılıyor
-	const float sensivity = 0.05f;
-	xoffset *= sensivity;
-	yoffset *= sensivity;
-
-	yaw += xoffset;
-	pitch += yoffset;
-
-	// pitch açısı bu 89 ve -89 olduğunda lookAt'teki anına dönüyor.
-	// Bu sorunu çözmek için bu sınırdan fazla yukarı ve aşağı baktırmıyoruz.
-	if (pitch > 89.0f)
-	{
-		pitch = 89.0f;
-	}
-
-	if (pitch < -89.0f)
-	{
-		pitch = -89.0f;
-	}
-
-	glm::vec3 direction;
-	direction.x = glm::cos(glm::radians(yaw)) * glm::cos(glm::radians(pitch));
-	direction.y = glm::sin(glm::radians(pitch));
-	direction.z = glm::sin(glm::radians(yaw)) * glm::cos(glm::radians(pitch));
-
-	// kameranın baktığı yön
-	cameraFront = glm::normalize(direction);
-}
-
-float fov = 45.0f;
-// zoom yapabilmek için farenin scroll_callback fonksiyonunu oluşturuyoruz.
-void scroll_callback(GLFWwindow *window, double xoffset, double yoffset)
-{
-	fov -= (float)yoffset;
-
-	if (fov < 1.0f)
-	{
-		fov = 1.0f;
-	}
-
-	if (fov > 45.0f)
-	{
-		fov = 45.0f;
-	}
-}
-
-// Kullanıcı tarafından yapılan inputları işler
-void processInput(GLFWwindow *window)
-{
-	const float cameraSpeed = 2.5f * deltaTime; // Uygun şekilde ayarlayın
-	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-	{
-		glfwSetWindowShouldClose(window, true);
-	}
-
-	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-	{
-		cameraPos += cameraSpeed * cameraFront;
-	}
-
-	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-	{
-		cameraPos -= cameraSpeed * cameraFront;
-	}
-
-	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-	{
-		cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
-	}
-
-	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-	{
-		cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
-	}
-
-	// std::cout << "Kamera pos x: " << cameraPos.x << " y: " << cameraPos.y << std::endl;
-}
-
-// Üçgeni oluşturan köşe bilgileri (Vertex data)
-float vertices[] = {
-	-0.5f, -0.5f, -0.5f, 0.0f, 0.0f,
-	0.5f, -0.5f, -0.5f, 1.0f, 0.0f,
-	0.5f, 0.5f, -0.5f, 1.0f, 1.0f,
-	0.5f, 0.5f, -0.5f, 1.0f, 1.0f,
-	-0.5f, 0.5f, -0.5f, 0.0f, 1.0f,
-	-0.5f, -0.5f, -0.5f, 0.0f, 0.0f,
-
-	-0.5f, -0.5f, 0.5f, 0.0f, 0.0f,
-	0.5f, -0.5f, 0.5f, 1.0f, 0.0f,
-	0.5f, 0.5f, 0.5f, 1.0f, 1.0f,
-	0.5f, 0.5f, 0.5f, 1.0f, 1.0f,
-	-0.5f, 0.5f, 0.5f, 0.0f, 1.0f,
-	-0.5f, -0.5f, 0.5f, 0.0f, 0.0f,
-
-	-0.5f, 0.5f, 0.5f, 1.0f, 0.0f,
-	-0.5f, 0.5f, -0.5f, 1.0f, 1.0f,
-	-0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
-	-0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
-	-0.5f, -0.5f, 0.5f, 0.0f, 0.0f,
-	-0.5f, 0.5f, 0.5f, 1.0f, 0.0f,
-
-	0.5f, 0.5f, 0.5f, 1.0f, 0.0f,
-	0.5f, 0.5f, -0.5f, 1.0f, 1.0f,
-	0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
-	0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
-	0.5f, -0.5f, 0.5f, 0.0f, 0.0f,
-	0.5f, 0.5f, 0.5f, 1.0f, 0.0f,
-
-	-0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
-	0.5f, -0.5f, -0.5f, 1.0f, 1.0f,
-	0.5f, -0.5f, 0.5f, 1.0f, 0.0f,
-	0.5f, -0.5f, 0.5f, 1.0f, 0.0f,
-	-0.5f, -0.5f, 0.5f, 0.0f, 0.0f,
-	-0.5f, -0.5f, -0.5f, 0.0f, 1.0f,
-
-	-0.5f, 0.5f, -0.5f, 0.0f, 1.0f,
-	0.5f, 0.5f, -0.5f, 1.0f, 1.0f,
-	0.5f, 0.5f, 0.5f, 1.0f, 0.0f,
-	0.5f, 0.5f, 0.5f, 1.0f, 0.0f,
-	-0.5f, 0.5f, 0.5f, 0.0f, 0.0f,
-	-0.5f, 0.5f, -0.5f, 0.0f, 1.0f};
-
-// indexler
-unsigned int indices[] = {
-	// Note that we start from 0!
-	0, 1, 3, // First triangle
-	1, 2, 3	 // Second triangle
-};
+// lighting
+glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
 
 int main()
 {
+	// glfw: initialize and configure
+	// ------------------------------
 	glfwInit();
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-	// Telling GLFW we want to use the core-profile means we'll get access to a smaller subset of OpenGL features without backwards-compatible features we no longer need. Note that on Mac OS X you need to add glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); to your initialization code for it to work:
-	// glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+#ifdef __APPLE__
+	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+#endif
 
-	GLFWwindow *window = glfwCreateWindow(800, 600, "LearnOpenGL", NULL, NULL);
-
+	// glfw window creation
+	// --------------------
+	GLFWwindow *window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "LearnOpenGL", NULL, NULL);
 	if (window == NULL)
 	{
 		std::cout << "Failed to create GLFW window" << std::endl;
 		glfwTerminate();
 		return -1;
 	}
-
 	glfwMakeContextCurrent(window);
+	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+	glfwSetCursorPosCallback(window, mouse_callback);
+	glfwSetScrollCallback(window, scroll_callback);
 
+	// tell GLFW to capture our mouse
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+	// glad: load all OpenGL function pointers
+	// ---------------------------------------
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
 	{
 		std::cout << "Failed to initialize GLAD" << std::endl;
 		return -1;
 	}
 
-	int windowWidth = 800;
-	int windowHeight = 600;
-	glViewport(0, 0, windowWidth, windowHeight);
-
-	// Ekrandaki görüntünün çizim modunu değiştirebilen fonksiyon ekledim. Sadece çizgi şeklinde ve normal şekilde 2 ayurı mod seçilebiliyor. GL_LINE, GL_FILL
-	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	// configure global opengl state
+	// -----------------------------
 	glEnable(GL_DEPTH_TEST);
 
-	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+	// build and compile our shader zprogram
+	// ------------------------------------
+	Shader lightingShader("shaders/1.colors.vs", "shaders/1.colors.fs");
+	Shader lightCubeShader("shaders/1.light_cube.vs", "shaders/1.light_cube.fs");
 
-	// Fare hareketlerini alabilmemiz için. Kamera hareketlerini oluşturabilmek için gerekli.
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	// set up vertex data (and buffer(s)) and configure vertex attributes
+	// ------------------------------------------------------------------
+	float vertices[] = {
+		-0.5f,
+		-0.5f,
+		-0.5f,
+		0.5f,
+		-0.5f,
+		-0.5f,
+		0.5f,
+		0.5f,
+		-0.5f,
+		0.5f,
+		0.5f,
+		-0.5f,
+		-0.5f,
+		0.5f,
+		-0.5f,
+		-0.5f,
+		-0.5f,
+		-0.5f,
 
-	// Zoom (yakınlaştırabilme) yapabilmek için
-	glfwSetScrollCallback(window, scroll_callback);
+		-0.5f,
+		-0.5f,
+		0.5f,
+		0.5f,
+		-0.5f,
+		0.5f,
+		0.5f,
+		0.5f,
+		0.5f,
+		0.5f,
+		0.5f,
+		0.5f,
+		-0.5f,
+		0.5f,
+		0.5f,
+		-0.5f,
+		-0.5f,
+		0.5f,
 
-	// Beyaz ışık
-	//glm::vec3 lightColor(1.0f, 1.0f, 1.0f);
-	// Yeşil ışık
-	//glm::vec3 lightColor(0.0f, 1.0f, 0.0f);
-	// koyu zeytin  renginde ışık
-	glm::vec3 lightColor(0.33f, 0.42f, 0.18f);
-	glm::vec3 toyColor(1.0f, 0.5f, 0.31f);
-	glm::vec3 result = lightColor * toyColor;
+		-0.5f,
+		0.5f,
+		0.5f,
+		-0.5f,
+		0.5f,
+		-0.5f,
+		-0.5f,
+		-0.5f,
+		-0.5f,
+		-0.5f,
+		-0.5f,
+		-0.5f,
+		-0.5f,
+		-0.5f,
+		0.5f,
+		-0.5f,
+		0.5f,
+		0.5f,
 
-	std::cout << "Işık Kaynağı * Oyuncak Rengi: r: " << result.r << " g: " << result.g << " b: " << result.b  << std::endl;
+		0.5f,
+		0.5f,
+		0.5f,
+		0.5f,
+		0.5f,
+		-0.5f,
+		0.5f,
+		-0.5f,
+		-0.5f,
+		0.5f,
+		-0.5f,
+		-0.5f,
+		0.5f,
+		-0.5f,
+		0.5f,
+		0.5f,
+		0.5f,
+		0.5f,
 
-	std::ifstream vFile("shaders/vertexshader.glsl");
-	if (!vFile.is_open())
-	{
-		std::cout << "ERROR: vertexshader.glsl açılamadı" << std::endl;
-		return -1;
-	}
+		-0.5f,
+		-0.5f,
+		-0.5f,
+		0.5f,
+		-0.5f,
+		-0.5f,
+		0.5f,
+		-0.5f,
+		0.5f,
+		0.5f,
+		-0.5f,
+		0.5f,
+		-0.5f,
+		-0.5f,
+		0.5f,
+		-0.5f,
+		-0.5f,
+		-0.5f,
 
-	std::stringstream vss;
-	vss << vFile.rdbuf();
-	vFile.close();
-	std::string vertexShaderStr = vss.str();
-	const char *vertexShaderSource = vertexShaderStr.c_str();
-
-	std::ifstream fFile("shaders/fragmentshader.glsl");
-
-	if (!fFile.is_open())
-	{
-		std::cout << "ERROR: fragmentshader.glsl acilamadi" << std::endl;
-		return -1;
-	}
-
-	std::stringstream fss;
-	fss << fFile.rdbuf();
-	fFile.close();
-
-	std::string fragmentShaderStr = fss.str();
-	const char *fragmentShaderSource = fragmentShaderStr.c_str();
-
-	// 1. Vertex Array Object oluşturuluyor
-	unsigned int VAO;
-	glGenVertexArrays(1, &VAO);
-	glBindVertexArray(VAO);
-
-	// 2. Vertex Buffer Object oluşturuluyor
-	unsigned int VBO;
+		-0.5f,
+		0.5f,
+		-0.5f,
+		0.5f,
+		0.5f,
+		-0.5f,
+		0.5f,
+		0.5f,
+		0.5f,
+		0.5f,
+		0.5f,
+		0.5f,
+		-0.5f,
+		0.5f,
+		0.5f,
+		-0.5f,
+		0.5f,
+		-0.5f,
+	};
+	// first, configure the cube's VAO (and VBO)
+	unsigned int VBO, cubeVAO;
+	glGenVertexArrays(1, &cubeVAO);
 	glGenBuffers(1, &VBO);
 
-	// glBindBuffer ve glBufferData kullanarak:
-	// 0. copy our vertices array in a buffer for OpenGL to use
-	// VBO'yu GL_ARRAY_BUFFER hedefine bağlıyoruz:
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	// Buffer bağlandıktan sonra, üçgeni oluşturan köşeler olan (yukarıda tanımladık)
-	// vertex data'yı buffer hafızasına kopyalıyoruz.
-	// GPU vertex data'ya anında erişebilir olacak ve performans çok artmış olacak.
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-	// Işık VAO
-	unsigned int lightVAO;
-	glGenVertexArrays(1, &lightVAO);
-	glBindVertexArray(lightVAO);
-	// we only need to bind to the vbo, to the container's vbo's data already contains the data.
+	glBindVertexArray(cubeVAO);
+
+	// position attribute
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
+	glEnableVertexAttribArray(0);
+
+	// second, configure the light's VAO (VBO stays the same; the vertices are the same for the light object which is also a 3D cube)
+	unsigned int lightCubeVAO;
+	glGenVertexArrays(1, &lightCubeVAO);
+	glBindVertexArray(lightCubeVAO);
+
+	// we only need to bind to the VBO (to link it with glVertexAttribPointer), no need to fill it; the VBO's data already contains all we need (it's already bound, but we do it again for educational purposes)
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	// set vertex attribute
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
 	glEnableVertexAttribArray(0);
 
-	// todo: yarın yeni vertex shader oluşturarak buradan devam
-	// edeceğim: https://learnopengl.com/Lighting/Colors
-
-	// 3. Element Buffer Object oluşturuluyor.
-	// unsigned int EBO;
-	// glGenBuffers(1, &EBO);
-
-	// Element buffer bağlanır ve bu buffer'a indices (indexler) kopyalanır.
-	// glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-	// glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-	Shader ourShader("shaders/vertexshader.glsl", "shaders/fragmentshader.glsl");
-	Shader lightingShader("shaders/lightingVertexShader.glsl", "shaders/lightingFragmentShader.glsl");
-
-	// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
-	// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
-
-	/* float borderColor[] = {
-		1.0f, 1.0f, 0.0f, 1.0f
-	};
-
-	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); */
-
-	// 1. then set the vertex attributes pointers
-	// Vertex Attributes köşe bilgisini (vertex: 3 birimlik köşe) göndermek için bağlanıyor ve etkinleştiriliyor.
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)0);
-	glEnableVertexAttribArray(0);
-
-	// Vertex Attributes texture coordinatları (2 birimlik: x, y)
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)(3 * sizeof(float)));
-	glEnableVertexAttribArray(2);
-
-	// Texture oluşturuluyor
-	unsigned int texture1;
-	glGenTextures(1, &texture1);
-
-	glBindTexture(GL_TEXTURE_2D, texture1);
-
-	// set the texture wrapping/filtering options (on the currently bound texture1 object)
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	// load and generate the texture1
-	int width1, height1, nrChannels1;
-	stbi_set_flip_vertically_on_load(true);
-	unsigned char *data1 = stbi_load("textures/container.jpg", &width1, &height1, &nrChannels1, 0);
-
-	if (data1)
-	{
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width1, height1, 0, GL_RGB, GL_UNSIGNED_BYTE, data1);
-		glGenerateMipmap(GL_TEXTURE_2D);
-	}
-	else
-	{
-		std::cout << "Failed to load texture1" << std::endl;
-	}
-
-	// load and generate the second texture
-	// Texture oluşturuluyor
-	unsigned int texture2;
-	glGenTextures(1, &texture2);
-	glBindTexture(GL_TEXTURE_2D, texture2);
-
-	int width2, height2, nrChannels2;
-	unsigned char *data2 = stbi_load("textures/awesomeface.png", &width2, &height2, &nrChannels2, 0);
-
-	if (data2)
-	{
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width2, height2, 0, GL_RGBA, GL_UNSIGNED_BYTE, data2);
-		glGenerateMipmap(GL_TEXTURE_2D);
-	}
-	else
-	{
-		std::cout << "Failed to load texture2" << std::endl;
-	}
-
-	stbi_image_free(data1);
-	stbi_image_free(data2);
-
-	// Draw the object:
-	ourShader.use();												// don't forget to activate the shader the shader before settings uniforms!
-	glUniform1i(glGetUniformLocation(ourShader.ID, "texture1"), 0); // set it manually
-	ourShader.setInt("texture2", 1);								// or with shader class
-
-	// lightingShader'larının uniform nesneleri ayarlanıyor:
-	lightingShader.use();
-	lightingShader.setVec3("objectColor", glm::vec3(1.0f, 0.5f, 0.31f));
-	lightingShader.setVec3("lightColor", glm::vec3(1.0f, 1.0f, 1.0f));
-
-	glm::vec3 lightPos(1.2f, 1.0, 2.0f);
-
-	// Transformations: 1 birim hareket ettirmek için trans = glm::mat4(1.0f)
-	glm::vec4 vec(1.0f, 0.0f, 0.0f, 1.0f);
-	glm::mat4 trans = glm::mat4(1.0f);
-	trans = glm::translate(trans, glm::vec3(1.0f, 1.0f, 0.0f));
-	vec = trans * vec;
-
-	// çıktı ilk oluşturulan vektöre kaydırmak istediğimiz 1 birimlik vektörü çarpar ve çıktısını yine ilk oluşturduğumuz
-	// vec vektörüne atar. Sonuçta (1+1, 0+1, 0+0) 210 yazmalıdır:
-	std::cout << vec.x << vec.y << vec.z << std::endl;
-
-	// Başka tranformation işlemleri:
-	glm::mat4 trans2 = glm::mat4(1.0f);
-	trans2 = glm::rotate(trans2, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-	trans2 = glm::scale(trans2, glm::vec3(0.5f, 0.5f, 0.5f));
-
-	// elde ettiğimiz yeni pozisyon verileri vertex shader'a gönderiliyor.
-	unsigned int transformLoc = glGetUniformLocation(ourShader.ID, "transform");
-	glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans2));
-
-	glm::vec3 cubePositions[] = {
-		glm::vec3(0.0f, 0.0f, -0.5f),
-		glm::vec3(2.0f, 5.0f, -15.0f),
-		glm::vec3(-1.5f, -2.2f, -2.5f),
-		glm::vec3(-3.8f, -2.0f, -12.3f),
-		glm::vec3(2.4f, -0.4f, -3.5f),
-		glm::vec3(-1.7f, 3.0f, -7.5f),
-		glm::vec3(1.3f, -2.0f, -2.5f),
-		glm::vec3(1.5f, 2.0f, -2.5f),
-		glm::vec3(1.5f, 0.2f, -1.5f),
-		glm::vec3(-1.3f, 1.0f, -1.5f)};
-
+	// render loop
+	// -----------
 	while (!glfwWindowShouldClose(window))
 	{
-		// Input
-		processInput(window);
-
-		// Fare hareketlerini yakalamak için
-		glfwSetCursorPosCallback(window, mouse_callback);
-
-		// Rendering commands here
-		glClearColor(0.8f, 0.8f, 0.8f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		// Drawing code in render loop
-
-		// Kamera yönünü ayarlanıyor (x, y, z):
-		// The name direction vector is not the best chosen name,
-		// since it is actually pointing in the reverse direction of what it is targeting.
-		glm::vec3 cameraTarget = glm::vec3(0.0f, 0.0f, 0.0f);
-		glm::vec3 cameraDirection = glm::normalize(cameraPos - cameraTarget);
-
-		// Sağ yönün ayarlanması:
-		// Right axis
-		// The next vector that we need is a right vector that represents
-		// the positive x-axis of the camera space. To get the right vector
-		// we use a little trick by first specifying an up vector that points
-		// upwards (in world space). Then we do a cross product on the up vector
-		// and the direction vector from step 2. Since the result of a cross product
-		// is a vector perpendicular to both vectors, we will get a vector that points
-		// in the positive x-axis's direction (if we would switch the cross product
-		// order we'd get a vector that points in the negative x-axis):
-		glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
-		glm::vec3 cameraRight = glm::normalize(glm::cross(up, cameraDirection));
-		glm::vec3 cameraLeft = glm::normalize(glm::cross(cameraDirection, up));
-
-		// Yukarı yönün ayarlanması:
-		// Up axis:
-		glm::vec3 cameraUp = glm::cross(cameraDirection, cameraRight);
-
-		// tahmini cameraDown hesaplamam:
-		glm::vec3 cameraDown = glm::cross(cameraRight, cameraDirection);
-
-		// GLM'in LookAt matrisini kullanıyoruz. Her şeyi bizim için çok daha kolaylaştırıy.
-		// Sadece camera pozisyonu, kamera hedefi ve yukarı matris (up):
-		const float radius = 10.0f;
-		float camX = sin(glfwGetTime()) * radius;
-		float camZ = cos(glfwGetTime()) * radius;
-		glm::mat4 view;
-		// view = glm::lookAt(cameraPos, cameraTarget, up);
-		// view = glm::lookAt(glm::vec3(camX, 0.0, camZ), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
-		view = glm::lookAt(cameraPos, cameraPos + cameraFront, up);
-
-		/* glm::vec3 direction;
-		direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch)); // Açıyı önce radyana çevirdiğimizi unutmayın
-		direction.y = sin(glm::radians(pitch));
-		direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
-		cameraFront = glm::normalize(direction); */
-
-		float currentFrame = glfwGetTime();
+		// per-frame time logic
+		// --------------------
+		float currentFrame = static_cast<float>(glfwGetTime());
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
 
-		// Uniform ourColor'ı güncelleyerek fragment shader'ı güncelliyoruz.
-		// Yeşilin tonlarını her frame yeniden hesaplayıp geçişli renk ayarlıyoruz.
-		float timeValue = glfwGetTime();
-		float greenValue = (sin(timeValue) / 2.0f) + 0.5f;
-		// int vertexColorLocation = glGetUniformLocation(shaderProgram, "ourColor");
+		// input
+		// -----
+		processInput(window);
 
-		// Uniform ile shaderProgram sürecinde rengi değiştirilebiliyor. Veriler güncellenebiliyor yani.
-		// 3D'de ilk model matrisimizin oluşturulması: model yere değecekmiş gibi aşağı indiriliyor.
-		// glm::mat4 model = glm::mat4(1.0f);
-		// model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+		// render
+		// ------
+		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		// Sahne içinde nasıl hareket edildiğini sonra göstereceğiz daha ayrıntılı olarak.
-		// Şimdilik view matrix şöyle görünüyor:
-		// glm::mat4 view = glm::mat4(1.0f);
-		// note that we're translating the scene in the reverse direction of where we want to move
-		// view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
+		// be sure to activate shader when setting uniforms/drawing objects
+		lightingShader.use();
+		lightingShader.setVec3("objectColor", 1.0f, 0.5f, 0.31f);
+		lightingShader.setVec3("lightColor", 1.0f, 1.0f, 1.0f);
 
-		// sol olarak perpective projection ayarlıyoruz. En gerçekçi görünüm için 45.0f:
-		glm::mat4 projection;
-		projection = glm::perspective(glm::radians(fov), 800.0f / 600.0f, 0.1f, 100.0f);
+		// view/projection transformations
+		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+		glm::mat4 view = camera.GetViewMatrix();
+		lightingShader.setMat4("projection", projection);
+		lightingShader.setMat4("view", view);
 
-		// glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 1.0f);
-		// glm::mat4 model = glm::mat4(1.0f);
-		// model = glm::rotate(model, (float)glfwGetTime() * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
-
-		// glm::mat4 model = glm::mat4(1.0f);
-		// model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f))
-
+		// world transformation
 		glm::mat4 model = glm::mat4(1.0f);
-		model = glm::rotate(model, (float)glfwGetTime() * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f)); // zamana bağlı dönme
+		lightingShader.setMat4("model", model);
 
-		// matrisler vertex shader'a gönderiliyor:
-		int modelLoc = glGetUniformLocation(ourShader.ID, "model");
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-
-		// ışık küpü oluşturuluyor
-		glm::mat4 modelLightCube = glm::mat4(1.0f);
-		modelLightCube = glm::translate(modelLightCube, lightPos);
-		modelLightCube = glm::scale(modelLightCube, glm::vec3(0.2f));
-
-		// ışık location belirleniyor:
-		int modelLightCubeLocation = glGetUniformLocation(lightingShader.ID, "model");
-		glUniformMatrix4fv(modelLightCubeLocation, 1, GL_FALSE, glm::value_ptr(modelLightCube));
-
-		// view matrisleri vertex shadera gönderiliyor:
-		int viewLightCubeLocation = glGetUniformLocation(lightingShader.ID, "view");
-		glUniformMatrix4fv(viewLightCubeLocation, 1, GL_FALSE, glm::value_ptr(view));
-
-		// Projection matrisleri vertex shadera gönderiliyor:
-		int projectionLightCubeLocation = glGetUniformLocation(lightingShader.ID, "projection");
-		glUniformMatrix4fv(projectionLightCubeLocation, 1, GL_FALSE, glm::value_ptr(projection));
-
-		// view matrisleri vertex shadera gönderiliyor:
-		/* int viewLoc = glGetUniformLocation(ourShader.ID, "view");
-		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-
-		// Projection matrisleri vertex shadera gönderiliyor:
-		int projectionLoc = glGetUniformLocation(ourShader.ID, "projection");
-		glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
-
-		// Başka başka tranformation işlemleri:
-		glm::mat4 trans3 = glm::mat4(1.0f);
-		// trans3 = glm::scale(trans3, glm::vec3(0.5f, 0.5f, 0.5f));
-		trans3 = glm::translate(trans3, glm::vec3(0.5f, -0.5f, 0.0f));
-		trans3 = glm::rotate(trans3, (float)glfwGetTime(), glm::vec3(0.0f, 0.0f, 1.0f));
-
-		// elde ettiğimiz yeni pozisyon verileri vertex shader'a gönderiliyor.
-		unsigned int transformLoc = glGetUniformLocation(ourShader.ID, "transform");
-		glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(trans3)); */
-
-		// Texture ayarlanıyor:
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, texture1);
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, texture2);
-
-		// Bir yukarıda VAO tanımlandığında, bir de şimdi burda render döngüsü içinde glUseProgram
-		// fonksiyonundan sonra bind ediliyor. Sebebini şimdilik anlamadım.
-		// glBindVertexArray(VAO);
-		//glBindVertexArray(VAO);
-
-		// Işık VAO küpü çizdiriliyor
-		glBindVertexArray(lightVAO);
+		// render the cube
+		glBindVertexArray(cubeVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 
-		// Üçgen çizdirildiği için 3 tane vertex çizileceğini söylüyoruz. 2 tane üçgen çizilseydi
-		// 2. parametre olarak 6 tane vertex çizilmesini belirtirdik:
-		// glDrawArrays(GL_TRIANGLES, 0, 36);
-		// glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		// also draw the lamp object
+		lightCubeShader.use();
+		lightCubeShader.setMat4("projection", projection);
+		lightCubeShader.setMat4("view", view);
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, lightPos);
+		model = glm::scale(model, glm::vec3(0.2f)); // a smaller cube
+		lightCubeShader.setMat4("model", model);
 
-		/* for (unsigned int i = 0; i < 10; i++)
-		{
-			glm::mat4 model = glm::mat4(1.0f);
-			model = glm::translate(model, cubePositions[i]);
-			float angle = 20.0f * i;
-			model = glm::rotate(model, (float)glfwGetTime() * glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
-			ourShader.setMat4("model", model);
+		glBindVertexArray(lightCubeVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
 
-			glDrawArrays(GL_TRIANGLES, 0, 36);
-		} */
-
-		glBindVertexArray(0);
-
-		// Check and call events and swap the buffers
+		// glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
+		// -------------------------------------------------------------------------------
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
 
+	// optional: de-allocate all resources once they've outlived their purpose:
+	// ------------------------------------------------------------------------
+	glDeleteVertexArrays(1, &cubeVAO);
+	glDeleteVertexArrays(1, &lightCubeVAO);
+	glDeleteBuffers(1, &VBO);
+
+	// glfw: terminate, clearing all previously allocated GLFW resources.
+	// ------------------------------------------------------------------
 	glfwTerminate();
 	return 0;
+}
+
+// process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
+// ---------------------------------------------------------------------------------------------------------
+void processInput(GLFWwindow *window)
+{
+	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+		glfwSetWindowShouldClose(window, true);
+
+	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+		camera.ProcessKeyboard(FORWARD, deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+		camera.ProcessKeyboard(BACKWARD, deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+		camera.ProcessKeyboard(LEFT, deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+		camera.ProcessKeyboard(RIGHT, deltaTime);
+}
+
+// glfw: whenever the window size changed (by OS or user resize) this callback function executes
+// ---------------------------------------------------------------------------------------------
+void framebuffer_size_callback(GLFWwindow *window, int width, int height)
+{
+	// make sure the viewport matches the new window dimensions; note that width and
+	// height will be significantly larger than specified on retina displays.
+	glViewport(0, 0, width, height);
+}
+
+// glfw: whenever the mouse moves, this callback is called
+// -------------------------------------------------------
+void mouse_callback(GLFWwindow *window, double xposIn, double yposIn)
+{
+	float xpos = static_cast<float>(xposIn);
+	float ypos = static_cast<float>(yposIn);
+
+	if (firstMouse)
+	{
+		lastX = xpos;
+		lastY = ypos;
+		firstMouse = false;
+	}
+
+	float xoffset = xpos - lastX;
+	float yoffset = lastY - ypos; // reversed since y-coordinates go from bottom to top
+
+	lastX = xpos;
+	lastY = ypos;
+
+	camera.ProcessMouseMovement(xoffset, yoffset);
+}
+
+// glfw: whenever the mouse scroll wheel scrolls, this callback is called
+// ----------------------------------------------------------------------
+void scroll_callback(GLFWwindow *window, double xoffset, double yoffset)
+{
+	camera.ProcessMouseScroll(static_cast<float>(yoffset));
 }

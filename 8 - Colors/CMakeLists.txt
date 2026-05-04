@@ -17,7 +17,6 @@ find_package(OpenGL REQUIRED)
 
 add_executable(Colors
     src/main.cpp
-    src/shader.cpp
     src/glad.c
     #src/GameState.cpp
     #src/Player.cpp
