@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10...3.29)
-project(Materials)
+project(LightingMaps)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -15,9 +15,10 @@ set(GLM_PATH "C:/glm-0.9.9.8")
 
 find_package(OpenGL REQUIRED)
 
-add_executable(Materials
+add_executable(LightingMaps
     src/main.cpp
     src/glad.c
+    src/stbiImageLoader.cpp
     #src/GameState.cpp
     #src/Player.cpp
     #src/Enemy.cpp
@@ -27,11 +28,11 @@ add_executable(Materials
     #src/ResourceManager.cpp
     #src/Shader.cpp
     #src/Model.cpp
-    #src/Materials.cpp
+    #src/LightingMaps.cpp
 )
 
 # Include path'ler
-target_include_directories(Materials PRIVATE
+target_include_directories(LightingMaps PRIVATE
     ${GLFW3_PATH}/include
     #${SDL2_PATH}/include
     #${SDL2_IMAGE_PATH}/include
@@ -53,7 +54,7 @@ link_directories(
 )
 
 # 🔥 Asıl kritik kısım
-target_link_libraries(Materials
+target_link_libraries(LightingMaps
     #${SDL2_PATH}/lib/x64/SDL2.lib
     #${SDL2_PATH}/lib/x64/SDL2main.lib
     #${SDL2_IMAGE_PATH}/lib/x64/SDL2_image.lib
@@ -64,18 +65,18 @@ target_link_libraries(Materials
     ${GLFW3_PATH}/build/src/Debug/glfw3.lib
 )
 
-install(TARGETS Materials DESTINATION bin)
+install(TARGETS LightingMaps DESTINATION bin)
 
 # Shader dosyalarını build klasörüne kopyala
-add_custom_command(TARGET Materials POST_BUILD
+add_custom_command(TARGET LightingMaps POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
     ${CMAKE_SOURCE_DIR}/shaders
-    $<TARGET_FILE_DIR:Materials>/shaders
+    $<TARGET_FILE_DIR:LightingMaps>/shaders
 )
 
 # Texture dosyalarını build klasörüne kopyala
-add_custom_command(TARGET Materials POST_BUILD
+add_custom_command(TARGET LightingMaps POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-    ${CMAKE_SOURCE_DIR}/textures
-    $<TARGET_FILE_DIR:Materials>/textures
+    ${CMAKE_SOURCE_DIR}/resources/textures
+    $<TARGET_FILE_DIR:LightingMaps>/resources/textures
 )

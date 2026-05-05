@@ -10,11 +10,13 @@
 #include <camera.h>
 
 #include <iostream>
+#include <filesystem.hpp>
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
 void mouse_callback(GLFWwindow *window, double xpos, double ypos);
 void scroll_callback(GLFWwindow *window, double xoffset, double yoffset);
 void processInput(GLFWwindow *window);
+unsigned int loadTexture(char const *path);
 
 // settings
 const unsigned int SCR_WIDTH = 800;
@@ -137,12 +139,16 @@ int main()
 	glBindVertexArray(cubeVAO);
 
 	// position attribute
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)0);
 	glEnableVertexAttribArray(0);
 
 	// normal attribute (diffuse color ayarlayabilmek için)
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *)(3 * sizeof(float)));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
+
+	// texture coord attribute
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(6 * sizeof(float)));
+	glEnableVertexAttribArray(2);
 
 	// second, configure the light's VAO (VBO stays the same; the vertices are the same for the light object which is also a 3D cube)
 	unsigned int lightCubeVAO;
@@ -151,13 +157,13 @@ int main()
 
 	// we only need to bind to the VBO (to link it with glVertexAttribPointer), no need to fill it; the VBO's data already contains all we need (it's already bound, but we do it again for educational purposes)
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *)0);
+	// note that we update the lamp's position attribute's stride to reflect the updated buffer data
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)0);
 	glEnableVertexAttribArray(0);
 
-	
 	// texture yükleniyor:
 	unsigned int diffuseMap = loadTexture(FileSystem::getPath("resources/textures/container2.png").c_str());
+	//unsigned int diffuseMap = loadTexture("resources/textures/container2.png");
 
 	// texture diffuse için shader ayarları
 	lightingShader.use();
@@ -200,7 +206,7 @@ int main()
 		// impacts the scattering / radius of the specular highlight.
 		lightingShader.setVec3("material.ambient", 1.0f, 0.5f, 0.31f);
 		// diffuse (dağılım rengi): genelde ambientle aynıdır. 1.color.fs fragment shader'ında ışığın yönü (lightDir) ile hesaplanır:
-		lightingShader.setVec3("material.diffuse", 1.0f, 0.5f, 0.31f);
+		//lightingShader.setVec3("material.diffuse", 1.0f, 0.5f, 0.31f);
 		// speculer (yüzeydeki farklı renkler ve yansımaların rengini yansıtır). 1.color.fs fragment shader'ında görüş yönü (viewDir) ile hesaplanır:
 		lightingShader.setVec3("material.specular", 0.5f, 0.5f, 0.5f);
 		// parlaklık materyalin parlaklığını simgeler. Her materyalin parlaklığı farklıdır.
@@ -210,9 +216,9 @@ int main()
 
 		// lightColor çok güçlü olduğu için aşırı parlak oluyor. Bu durumu çözebilmek için önceden strength eklemiştik ama şimdi daha doğru şekilde
 		// ışığın da ambient, diffuse ve specular bileşenlerini ayarlayarak daha doğru bir çözüm yapalım.
-		// lightingShader.setVec3("light.ambient", 0.2f, 0.2f, 0.2f);
+		//lightingShader.setVec3("light.ambient", 0.2f, 0.2f, 0.2f);
 		// dağınık ışığı biraz karartıyoruz:
-		// lightingShader.setVec3("light.diffus", 0.5f, 0.5f, 0.5f);
+		//lightingShader.setVec3("light.diffus", 0.5f, 0.5f, 0.5f);
 		lightingShader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
 
 		// Different light colors
@@ -232,11 +238,6 @@ int main()
 
 		lightingShader.setVec3("light.ambient", ambientColor);
 		lightingShader.setVec3("light.diffuse", diffuseColor);
-		// Material Diffuse texture olarak ayarlanıyor.
-		lightingShader.setInt("material.diffuse", 0);
-
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, diffuseMap);
 
 		// view/projection transformations
 		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
@@ -248,6 +249,10 @@ int main()
 		glm::mat4 model = glm::mat4(1.0f);
 		model = glm::rotate(model, currentFrame, glm::vec3(0.0f, 1.0f, 0.0f));
 		lightingShader.setMat4("model", model);
+
+		// bind diffuse map
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, diffuseMap);
 
 		// render the cube
 		glBindVertexArray(cubeVAO);
