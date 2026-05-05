@@ -163,11 +163,11 @@ int main()
 
 	// texture yükleniyor:
 	unsigned int diffuseMap = loadTexture(FileSystem::getPath("resources/textures/container2.png").c_str());
-	//unsigned int diffuseMap = loadTexture("resources/textures/container2.png");
-
+	unsigned int specularMap = loadTexture(FileSystem::getPath("resources/textures/container2_specular.png").c_str());
 	// texture diffuse için shader ayarları
 	lightingShader.use();
 	lightingShader.setInt("material.diffuse", 0);
+	lightingShader.setInt("material.specular", 1);
 
 	// render loop
 	// -----------
@@ -204,11 +204,11 @@ int main()
 		// highlight on the surface(or possibly even reflect a surface - specific color).Lastly, the shininess
 
 		// impacts the scattering / radius of the specular highlight.
-		lightingShader.setVec3("material.ambient", 1.0f, 0.5f, 0.31f);
+		//lightingShader.setVec3("material.ambient", 1.0f, 0.5f, 0.31f);
 		// diffuse (dağılım rengi): genelde ambientle aynıdır. 1.color.fs fragment shader'ında ışığın yönü (lightDir) ile hesaplanır:
 		//lightingShader.setVec3("material.diffuse", 1.0f, 0.5f, 0.31f);
 		// speculer (yüzeydeki farklı renkler ve yansımaların rengini yansıtır). 1.color.fs fragment shader'ında görüş yönü (viewDir) ile hesaplanır:
-		lightingShader.setVec3("material.specular", 0.5f, 0.5f, 0.5f);
+		//lightingShader.setVec3("material.specular", 0.5f, 0.5f, 0.5f);
 		// parlaklık materyalin parlaklığını simgeler. Her materyalin parlaklığı farklıdır.
 		// Örneğin zümrüt materyalinin shineness'ı 32 olmalıdır. Bu ve diğer materyallerin
 		// özelliklerinin ne olacağı yukarıdaki web sitesinde var:
@@ -228,10 +228,15 @@ int main()
 		// can change their colors over time to get some really interesting effects. Since everything
 		// is already set up in the fragment shader, changing the light' s colors is easy and
 		// immediately creates some funky effects:
-		glm::vec3 lightColor;
+		/* glm::vec3 lightColor;
 		lightColor.x = sin(glfwGetTime() * 2.0f);
 		lightColor.y = sin(glfwGetTime() * 0.7f);
-		lightColor.z = sin(glfwGetTime() * 1.3f);
+		lightColor.z = sin(glfwGetTime() * 1.3f); */
+
+		glm::vec3 lightColor;
+		lightColor.x = 1.0f;
+		lightColor.y = 1.0f;
+		lightColor.z = 1.0f;
 
 		glm::vec3 diffuseColor = lightColor * glm::vec3(1.0f);
 		glm::vec3 ambientColor = diffuseColor * glm::vec3(0.1f);
@@ -247,12 +252,16 @@ int main()
 
 		// world transformation
 		glm::mat4 model = glm::mat4(1.0f);
-		model = glm::rotate(model, currentFrame, glm::vec3(0.0f, 1.0f, 0.0f));
+		//model = glm::rotate(model, currentFrame, glm::vec3(0.0f, 1.0f, 0.0f));
 		lightingShader.setMat4("model", model);
 
 		// bind diffuse map
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, diffuseMap);
+
+		// bind specular map
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, specularMap);
 
 		// render the cube
 		glBindVertexArray(cubeVAO);
