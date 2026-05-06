@@ -208,7 +208,7 @@ int main()
 		lightingShader.use();
 		lightingShader.setVec3("viewPos", camera.Position);
 		//lightingShader.setVec3("light.direction", -0.2f, -1.0f, -0.3f); // nokta ışıklandırma kullanılırken direction'a gerek yok
-		lightingShader.setVec3("light.position", lightPos);
+		lightingShader.setVec3("light.position", camera.Position);
 
 		/* if(lightVector.w == 0.0) // note: be careful for floating point errors
   			// do directional light calculations
@@ -243,6 +243,10 @@ int main()
 		lightingShader.setFloat("light.constant", 1.0f);
 		lightingShader.setFloat("light.linear", 0.09f);
 		lightingShader.setFloat("light.quadratic", 0.032f);
+		//Spotlight ışığı için ayarlar:
+		lightingShader.setVec3("light.direction", camera.Front);
+		lightingShader.setFloat("light.cutOff", glm::cos(glm::radians(12.5f)));
+		lightingShader.setFloat("light.outherCutOff", glm::cos(glm::radians(17.5f)));
 
 		// Different light colors
 		// So far we used light colors to only vary the intensity of their individual components by
@@ -274,9 +278,8 @@ int main()
 		lightingShader.setMat4("view", view);
 
 		// world transformation
-		//glm::mat4 model = glm::mat4(1.0f);
-		//model = glm::rotate(model, currentFrame, glm::vec3(0.0f, 1.0f, 0.0f));
-		//lightingShader.setMat4("model", model);
+		glm::mat4 model = glm::mat4(1.0f);
+		lightingShader.setMat4("model", model);
 
 		// bind diffuse map
 		glActiveTexture(GL_TEXTURE0);
@@ -309,7 +312,7 @@ int main()
 		}
 
 		// also draw the lamp object
-		lightCubeShader.use();
+		/* lightCubeShader.use();
 		lightCubeShader.setMat4("projection", projection);
 		lightCubeShader.setMat4("view", view);
 		glm::mat4 model = glm::mat4(1.0f);
@@ -318,7 +321,7 @@ int main()
 		lightCubeShader.setMat4("model", model);
 
 		glBindVertexArray(lightCubeVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
+		glDrawArrays(GL_TRIANGLES, 0, 36); */
 
 		// glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
 		// -------------------------------------------------------------------------------
