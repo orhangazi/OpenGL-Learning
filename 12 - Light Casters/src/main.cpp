@@ -274,9 +274,9 @@ int main()
 		lightingShader.setMat4("view", view);
 
 		// world transformation
-		glm::mat4 model = glm::mat4(1.0f);
+		//glm::mat4 model = glm::mat4(1.0f);
 		//model = glm::rotate(model, currentFrame, glm::vec3(0.0f, 1.0f, 0.0f));
-		lightingShader.setMat4("model", model);
+		//lightingShader.setMat4("model", model);
 
 		// bind diffuse map
 		glActiveTexture(GL_TEXTURE0);
@@ -312,7 +312,7 @@ int main()
 		lightCubeShader.use();
 		lightCubeShader.setMat4("projection", projection);
 		lightCubeShader.setMat4("view", view);
-		model = glm::mat4(1.0f);
+		glm::mat4 model = glm::mat4(1.0f);
 		model = glm::translate(model, lightPos);
 		model = glm::scale(model, glm::vec3(0.2f)); // a smaller cube
 		lightCubeShader.setMat4("model", model);
