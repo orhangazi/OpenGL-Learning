@@ -20,7 +20,8 @@ struct Material {
 uniform Material material;
 
 struct Light {
-    vec3 position;
+    //vec3 position; //Yönlü ışıklandırma kullanacağımızdan position'a gerek yok.
+    vec3 direction;
 
     vec3 ambient;
     vec3 diffuse;
@@ -37,7 +38,7 @@ void main()
     // 2) diffuse color'un hesaplanması:
     // Işık kaynağının normalleştirilmesi gerekli
     vec3 norm = normalize(Normal);
-    vec3 lightDir = normalize(lightPos - FragPos);
+    vec3 lightDir = normalize(-light.direction);
 
     float diff = max(dot(norm, lightDir), 0.0);
     vec3 diffuse = light.diffuse * diff * vec3(texture(material.diffuse, TexCoords));
@@ -57,6 +58,6 @@ void main()
     vec3 emission = vec3(texture(material.emission, TexCoords));
 
     // phong lighting oluşturulması:
-    vec3 result = ambient + diffuse + specular + emission;
+    vec3 result = ambient + diffuse + specular;// + emission;
     FragColor = vec4(result, 1.0);
 }
