@@ -177,13 +177,13 @@ int main()
 	// texture yükleniyor:
 	unsigned int diffuseMap = loadTexture(FileSystem::getPath("resources/textures/container2.png").c_str());
 	unsigned int specularMap = loadTexture(FileSystem::getPath("resources/textures/container2_specular.png").c_str());
-	//unsigned int emissionMap = loadTexture(FileSystem::getPath("resources/textures/matrix.jpg").c_str());
+	unsigned int emissionMap = loadTexture(FileSystem::getPath("resources/textures/matrix.jpg").c_str());
 
 	// texture diffuse için shader ayarları
 	lightingShader.use();
 	lightingShader.setInt("material.diffuse", 0);
 	lightingShader.setInt("material.specular", 1);
-	//lightingShader.setInt("material.emission", 2);
+	lightingShader.setInt("material.emission", 2);
 
 	// render loop
 	// -----------
@@ -207,7 +207,8 @@ int main()
 		// be sure to activate shader when setting uniforms/drawing objects
 		lightingShader.use();
 		lightingShader.setVec3("viewPos", camera.Position);
-		lightingShader.setVec3("light.direction", -0.2f, -1.0f, -0.3f);
+		//lightingShader.setVec3("light.direction", -0.2f, -1.0f, -0.3f); // nokta ışıklandırma kullanılırken direction'a gerek yok
+		lightingShader.setVec3("light.position", lightPos);
 
 		/* if(lightVector.w == 0.0) // note: be careful for floating point errors
   			// do directional light calculations
@@ -237,8 +238,11 @@ int main()
 		// ışığın da ambient, diffuse ve specular bileşenlerini ayarlayarak daha doğru bir çözüm yapalım.
 		lightingShader.setVec3("light.ambient", 0.2f, 0.2f, 0.2f);
 		// dağınık ışığı biraz karartıyoruz:
-		lightingShader.setVec3("light.diffus", 0.5f, 0.5f, 0.5f);
+		lightingShader.setVec3("light.diffuse", 0.5f, 0.5f, 0.5f);
 		lightingShader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
+		lightingShader.setFloat("light.constant", 1.0f);
+		lightingShader.setFloat("light.linear", 0.09f);
+		lightingShader.setFloat("light.quadratic", 0.032f);
 
 		// Different light colors
 		// So far we used light colors to only vary the intensity of their individual components by
@@ -283,8 +287,8 @@ int main()
 		glBindTexture(GL_TEXTURE_2D, specularMap);
 
 		// bind emission map
-		/* glActiveTexture(GL_TEXTURE2);
-		glBindTexture(GL_TEXTURE_2D, emissionMap); */
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, emissionMap);
 
 		// render the cube
 		/* glBindVertexArray(cubeVAO);
@@ -305,8 +309,7 @@ int main()
 		}
 
 		// also draw the lamp object
-		// a lamp object is weird when we only have a directional light, don't render the light object
-		/* lightCubeShader.use();
+		lightCubeShader.use();
 		lightCubeShader.setMat4("projection", projection);
 		lightCubeShader.setMat4("view", view);
 		model = glm::mat4(1.0f);
@@ -315,7 +318,7 @@ int main()
 		lightCubeShader.setMat4("model", model);
 
 		glBindVertexArray(lightCubeVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 36); */
+		glDrawArrays(GL_TRIANGLES, 0, 36);
 
 		// glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
 		// -------------------------------------------------------------------------------
