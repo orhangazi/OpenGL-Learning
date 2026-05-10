@@ -1,12 +1,12 @@
 cmake_minimum_required(VERSION 3.10...3.29)
-project(Assimp)
+project(StencilTesting)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # SDL root path'leri
 set(GLFW3_PATH "C:/glfw-3.4")
-set(ASSIMP_PATH "C:/Assimp")
+set(ASSIMP_PATH "C:/assimp")
 #set(SDL2_PATH "C:/SDL2-2.30.11")
 #set(SDL2_IMAGE_PATH "C:/SDL2_image-2.6.0")
 #set(SDL2_MIXER_PATH "C:/SDL2_mixer-2.8.1")
@@ -16,7 +16,7 @@ set(GLM_PATH "C:/glm-0.9.9.8")
 
 find_package(OpenGL REQUIRED)
 
-add_executable(Assimp
+add_executable(StencilTesting
     src/main.cpp
     src/glad.c
     src/stbiImageLoader.cpp
@@ -34,7 +34,7 @@ add_executable(Assimp
 )
 
 # Include path'ler
-target_include_directories(Assimp PRIVATE
+target_include_directories(StencilTesting PRIVATE
     ${GLFW3_PATH}/include
     ${ASSIMP_PATH}/include
     #${SDL2_PATH}/include
@@ -58,7 +58,7 @@ link_directories(
 )
 
 # 🔥 Asıl kritik kısım
-target_link_libraries(Assimp
+target_link_libraries(StencilTesting
     #${SDL2_PATH}/lib/x64/SDL2.lib
     #${SDL2_PATH}/lib/x64/SDL2main.lib
     #${SDL2_IMAGE_PATH}/lib/x64/SDL2_image.lib
@@ -70,18 +70,25 @@ target_link_libraries(Assimp
     ${ASSIMP_PATH}/lib/Debug/assimp-vc143-mtd.lib
 )
 
-install(TARGETS Assimp DESTINATION bin)
+install(TARGETS StencilTesting DESTINATION bin)
 
 # Shader dosyalarını build klasörüne kopyala
-add_custom_command(TARGET Assimp POST_BUILD
+add_custom_command(TARGET StencilTesting POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
     ${CMAKE_SOURCE_DIR}/shaders
-    $<TARGET_FILE_DIR:Assimp>/shaders
+    $<TARGET_FILE_DIR:StencilTesting>/shaders
 )
 
 # Texture dosyalarını build klasörüne kopyala
-add_custom_command(TARGET Assimp POST_BUILD
+add_custom_command(TARGET StencilTesting POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
     ${CMAKE_SOURCE_DIR}/resources
-    $<TARGET_FILE_DIR:Assimp>/resources
+    $<TARGET_FILE_DIR:StencilTesting>/resources
+)
+
+# Dll dosyalarını build klasörüne kopyala
+add_custom_command(TARGET StencilTesting POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    ${ASSIMP_PATH}/bin/Debug/assimp-vc143-mtd.dll
+    $<TARGET_FILE_DIR:StencilTesting>/
 )
