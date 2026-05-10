@@ -120,6 +120,7 @@ int main()
 
 		ourShader.setMat4("projection", projection);
 		ourShader.setMat4("view", view);
+		ourShader.setVec3("viewPos", camera.Position);
 
 		// render the loaded model
 		glm::mat4 model = glm::mat4(1.0f);

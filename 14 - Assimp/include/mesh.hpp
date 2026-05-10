@@ -16,8 +16,8 @@ using namespace std;
 
 struct Vertex
 {
-	// postion
-	glm::vec3 Postion;
+	// position
+	glm::vec3 Position;
 
 	// normal
 	glm::vec3 Normal;
@@ -83,9 +83,16 @@ public:
 			if (name == "texture_diffuse")
 				number = std::to_string(diffuseNr++);
 			else if (name == "texture_specular")
-				number = std::to_string(specularNr++); // transfer unsigned int to string
+				number = std::to_string(specularNr++);
+			else if (name == "texture_normal")
+				number = std::to_string(normalNr++);
+			else if (name == "texture_height")
+				number = std::to_string(heightNr++);
 
 			shader.setInt(("material." + name + number).c_str(), i);
+			// now set the sampler to the correct texture unit
+			// glUniform1i(glGetUniformLocation(shader.ID, (name + number).c_str()), i);
+			// and finally bind the texture
 			glBindTexture(GL_TEXTURE_2D, textures[i].id);
 		}
 

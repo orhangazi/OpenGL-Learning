@@ -1,35 +1,31 @@
 #version 460 core
 out vec4 FragColor;
 
+in vec3 FragPos;
+in vec3 Normal;
 in vec2 TexCoords;
 
 uniform sampler2D texture_diffuse1;
 uniform sampler2D texture_specular1;
+uniform vec3 viewPos;
 
 void main()
-{    
-    /* vec3 lightDir = normalize(light.position - FragPos);
-    // diffuse shading
-    float diff = max(dot(normal, lightDir), 0.0);
-    // specular shading
-    vec3 reflectDir = reflect(-lightDir, normal);
-    float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
-    // attenuation
-    float distance = length(light.position - FragPos);
-    float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
+{
+    vec3 lightDir = normalize(vec3(1.0, 1.0, 1.0));
+    vec3 norm = normalize(Normal);
 
-    // combine results
-    vec3 ambient = light.ambient * vec3(texture(material.diffuse, TexCoords));
-    vec3 diffuse = light.diffuse * diff * vec3(texture(material.diffuse, TexCoords));
-    vec3 specular = light.specular * spec * vec3(texture(material.specular, TexCoords));
+    // ambient
+    vec3 ambient = 0.2 * texture(texture_diffuse1, TexCoords).rgb;
 
-    ambient *= attenuation;
-    diffuse *= attenuation;
-    specular *= attenuation;
+    // diffuse
+    float diff = max(dot(norm, lightDir), 0.0);
+    vec3 diffuse = diff * texture(texture_diffuse1, TexCoords).rgb;
 
-    return (ambient + diffuse + specular); */
+    // specular
+    vec3 viewDir = normalize(viewPos - FragPos);
+    vec3 reflectDir = reflect(-lightDir, norm);
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32.0);
+    vec3 specular = spec * texture(texture_specular1, TexCoords).rgb;
 
-    FragColor = texture(texture_diffuse1, TexCoords);
-    //FragColor = mix(texture(texture_diffuse1, TexCoords), texture(texture_specular1, TexCoords), 0.5);
-    //FragColor =  (vec3(texture(texture_diffuse1, TexCoords)) + vec3(texture(texture_specular1, TexCoords)));
+    FragColor = vec4(ambient + diffuse + specular, 1.0);
 }
