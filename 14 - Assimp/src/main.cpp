@@ -125,7 +125,7 @@ int main()
 		// render the loaded model
 		glm::mat4 model = glm::mat4(1.0f);
 		model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f)); // translate it down so it's at the center of the scene
-		model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.5f));
+		model = glm::scale(model, glm::vec3(0.7f, 0.7f, 0.7f));
 
 		ourShader.setMat4("model", model);
 		ourModel.Draw(ourShader);
