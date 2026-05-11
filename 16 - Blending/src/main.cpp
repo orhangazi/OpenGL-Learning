@@ -12,7 +12,6 @@
 
 #include <iostream>
 #include <filesystem.hpp>
-
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
 void mouse_callback(GLFWwindow *window, double xpos, double ypos);
 void scroll_callback(GLFWwindow *window, double xoffset, double yoffset);
@@ -74,12 +73,10 @@ int main()
 	// configure global opengl state
 	// -----------------------------
 	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	// build and compile shaders
 	// -------------------------
-	Shader shader("3.2.blending.vs", "3.2.blending.fs");
+	Shader shader("shaders/3.1.blending.vs", "shaders/3.1.blending.fs");
 
 	// set up vertex data (and buffer(s)) and configure vertex attributes
 	// ------------------------------------------------------------------
@@ -183,11 +180,11 @@ int main()
 	// -------------
 	unsigned int cubeTexture = loadTexture(FileSystem::getPath("resources/textures/marble.jpg").c_str());
 	unsigned int floorTexture = loadTexture(FileSystem::getPath("resources/textures/metal.png").c_str());
-	unsigned int transparentTexture = loadTexture(FileSystem::getPath("resources/textures/window.png").c_str());
+	unsigned int transparentTexture = loadTexture(FileSystem::getPath("resources/textures/grass.png").c_str());
 
-	// transparent window locations
+	// transparent vegetation locations
 	// --------------------------------
-	vector<glm::vec3> windows{
+	vector<glm::vec3> vegetation{
 		glm::vec3(-1.5f, 0.0f, -0.48f),
 		glm::vec3(1.5f, 0.0f, 0.51f),
 		glm::vec3(0.0f, 0.0f, 0.7f),
@@ -212,15 +209,6 @@ int main()
 		// input
 		// -----
 		processInput(window);
-
-		// sort the transparent windows before rendering
-		// ---------------------------------------------
-		std::map<float, glm::vec3> sorted;
-		for (unsigned int i = 0; i < windows.size(); i++)
-		{
-			float distance = glm::length(camera.Position - windows[i]);
-			sorted[distance] = windows[i];
-		}
 
 		// render
 		// ------
@@ -251,13 +239,13 @@ int main()
 		model = glm::mat4(1.0f);
 		shader.setMat4("model", model);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
-		// windows (from furthest to nearest)
+		// vegetation
 		glBindVertexArray(transparentVAO);
 		glBindTexture(GL_TEXTURE_2D, transparentTexture);
-		for (std::map<float, glm::vec3>::reverse_iterator it = sorted.rbegin(); it != sorted.rend(); ++it)
+		for (unsigned int i = 0; i < vegetation.size(); i++)
 		{
 			model = glm::mat4(1.0f);
-			model = glm::translate(model, it->second);
+			model = glm::translate(model, vegetation[i]);
 			shader.setMat4("model", model);
 			glDrawArrays(GL_TRIANGLES, 0, 6);
 		}
